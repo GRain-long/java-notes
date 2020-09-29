@@ -172,3 +172,84 @@ https://hub.docker.com/_/nginx
 https://my.oschina.net/u/4437985/blog/4642766
 ```
 
+
+
+## Docker安装tomcat
+
+### 搜索并拉取tomcat镜像
+
+```shell
+# 搜索tomcat镜像
+docker search tomcat
+
+# 拉取tomcat镜像
+docker pull tomcat
+
+# 查看镜像
+docker images
+```
+
+
+
+
+
+### 创建挂载目录
+
+- tomcat 主要挂载logs、webapps目录
+
+```shell
+# 创建相应挂载目录
+mkdir -p docker-tomcat/{logs,webapps,conf}
+
+# 查看当前目录
+pwd
+```
+
+  ![image-20200929163917224](images/docker安装环境/image-20200929163917224.png)
+
+**说明**：tree命令需要格外安装： 
+
+```shell
+yum -y install tree
+```
+
+
+
+- 拷贝tomcat的相关文件
+
+```shell
+# 先启动一个临时的tomcat
+docker run -d --name tomcat-tmp -P tomcat
+
+#拷贝相关配置文件
+docker cp tomcat-tmp:/usr/local/tomcat/conf/. /usr/local/docker-tomcat/conf/
+
+#拷贝页面 
+docker cp tomcat-tmp:/usr/local/tomcat/webapps.dist/. /usr/local/docker-tomcat/webapps/
+
+# 最后删除该临时容器
+docker rm -f tomcat-tmp
+```
+
+**说明**：不知为啥，dockerhub上拉取下来的tomcat，webapps文件夹是空的，所有文件都在webapps.dist里面，所以如果一开始直接访问是会报404的。因此拷贝也要从webapps.dist中进行拷贝。
+
+
+
+### 启动镜像
+
+```shell
+# 启动镜像
+docker run -d --name tomcat \
+-p 8080:8080 \
+-v /usr/local/docker-tomcat/conf:/usr/local/tomcat/conf \
+-v /usr/local/docker-tomcat/logs:/usr/local/tomcat/logs \
+-v /usr/local/docker-tomcat/webapps:/usr/local/tomcat/webapps \
+--restart=always \
+tomcat
+```
+
+
+
+访问 IP地址:8080 即可看到如下页面：![image-20200929171107140](images/docker安装环境/image-20200929171107140.png)
+
+后面如果需要运行自己的war包，可以删除webapps目录下的所有文件，直接把war丢入该目录中即可，tomcat会自动解压该war包。
